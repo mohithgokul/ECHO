@@ -23,56 +23,57 @@ public class ChatClient {
             PrintWriter out = new PrintWriter(
                     socket.getOutputStream(), true);
 
-            // read ENTER_USERNAME
+            // ---- LOGIN ----
             readBlock(in);
 
             System.out.print("Enter username: ");
             String username = sc.nextLine();
             out.println(username);
 
-            // read LOGIN_SUCCESS
             readBlock(in);
 
+            
             while (true) {
-                System.out.println("\n1. Send Message");
-                System.out.println("2. View Inbox");
-                System.out.println("3. View Sent");
-                System.out.println("4. Logout");
-                System.out.print("Choice: ");
 
-                int choice = Integer.parseInt(sc.nextLine());
+                System.out.println("---------------------------------------------------------------");
+                System.out.println("                          ECHO");
+                System.out.println("---------------------------------------------------------------");
+                System.out.println("1. INBOX   2. PENDING REQUESTS   3. SEND FRIEND REQUEST   4. LOGOUT");
+                System.out.print("\nOPTION: ");
 
-                if (choice == 1) {
-                    System.out.print("To: ");
-                    String to = sc.nextLine();
-                    System.out.print("Message: ");
-                    String msg = sc.nextLine();
-                    out.println("SEND " + to + " " + msg);
-                    readBlock(in);
-                }
-                else if (choice == 2) {
-                    out.println("INBOX");
-                    readBlock(in);
-                }
-                else if (choice == 3) {
-                    out.println("SENT");
-                    readBlock(in);
-                }
-                else if (choice == 4) {
-                    out.println("LOGOUT");
-                    readBlock(in);
-                    break;
+                String option = sc.nextLine();
+
+                switch (option) {
+                    case "1":
+                        openInbox(sc, out, in);
+                        break;
+
+                    case "2":
+                        openPendingRequests(sc, out, in);
+                        break;
+
+                    case "3":
+                        sendFriendRequest(sc, out, in);
+                        break;
+
+                    case "4":
+                        out.println("LOGOUT");
+                        readBlock(in);
+                        socket.close();
+                        sc.close();
+                        return;
+
+                    default:
+                        System.out.println("Invalid option.");
                 }
             }
-
-            socket.close();
-            sc.close();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+  
     private static void readBlock(BufferedReader in) throws IOException {
         String line;
 
@@ -81,5 +82,88 @@ public class ChatClient {
         while (!(line = in.readLine()).equals("END")) {
             System.out.println(line);
         }
+    }
+
+    
+    private static void openInbox(
+            Scanner sc, PrintWriter out, BufferedReader in) throws IOException {
+
+        out.println("LIST_FRIENDS");
+        readBlock(in);
+
+        System.out.println("Enter friend number to open chat");
+        System.out.println("0. Back");
+        System.out.print("> ");
+
+        String choice = sc.nextLine();
+        if (choice.equals("0")) return;
+
+        openChat(choice, sc, out, in);
+    }
+
+
+    private static void openChat(
+            String friendIndex,
+            Scanner sc,
+            PrintWriter out,
+            BufferedReader in
+    ) throws IOException {
+
+        out.println("OPEN_CHAT " + friendIndex);
+        readBlock(in);
+
+       while (true) {
+    System.out.print("> ");
+    String msg = sc.nextLine();
+
+   
+    if (msg.equals("0")) return;
+
+  
+    if (msg.trim().isEmpty()) {
+        out.println("OPEN_CHAT " + friendIndex);
+        readBlock(in);
+        continue;
+    }
+
+    out.println("SEND " + friendIndex + " " + msg);
+    readBlock(in);
+}
+
+    }
+
+   
+    private static void openPendingRequests(
+            Scanner sc, PrintWriter out, BufferedReader in) throws IOException {
+
+        out.println("LIST_REQUESTS");
+        readBlock(in);
+
+        System.out.println("Enter number to ACCEPT");
+        System.out.println("R<number> to REJECT");
+        System.out.println("0. Back");
+        System.out.print("> ");
+
+        String input = sc.nextLine();
+        if (input.equals("0")) return;
+
+        if (input.startsWith("R")) {
+            out.println("REJECT_REQUEST " + input.substring(1));
+        } else {
+            out.println("ACCEPT_REQUEST " + input);
+        }
+
+        readBlock(in);
+    }
+
+    
+    private static void sendFriendRequest(
+            Scanner sc, PrintWriter out, BufferedReader in) throws IOException {
+
+        System.out.print("Enter username: ");
+        String user = sc.nextLine();
+
+        out.println("SEND_REQUEST " + user);
+        readBlock(in);
     }
 }
